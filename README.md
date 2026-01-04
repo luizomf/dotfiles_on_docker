@@ -14,7 +14,7 @@ lots of other applications. We are using a combination of: `Dockerfile`,
 `compose.yaml` and `just` to make it easier to `build`, `start` and `stop`
 containers.
 
-So, if you what test it, make sure you have `Docker` and `just` installed.
+So, if you want test it, make sure you have `Docker` and `just` installed.
 
 In the docker compose file, I'm mapping 3 volumes to ensure my initial
 configuration (my `dotfiles`) and data persistence after the build. I'm also

@@ -59,3 +59,61 @@ After this initial build, you can just run `just exec` to enter whenever you
 want.
 
 ---
+
+## Permissions
+
+When the directory `project` is created by Docker, you may end up with your host
+user or `root` owning it. That means you won't be able to do anything with that
+directory.
+
+To fix that, you can match you `$USER` id with the user inside docker. You can
+even match the username if you wish. You just have to change the `.env` file,
+delete volume and rebuild.
+
+Let me show you how you can do it:
+
+```sh
+# Find your user ID
+id
+# In the VM I'm testing, the username is `luizotavio`, the group is `luizotavio`,
+# and both UID and GID are 1001.
+# uid=1001(luizotavio) gid=1001(luizotavio)...
+# Right, go to `.env` and change the values:
+# The current values are:
+DEV_USER=dubuntu
+DEV_UID=1010
+DEV_GID=1010
+# The new values are:
+DEV_USER=luizotavio
+DEV_UID=1001
+DEV_GID=1001
+
+# Now lets stop the container (if it is running)
+docker compose down
+# And delete the volume
+docker volume rm user_home_dubuntu
+# If you wish to check first: docker volume ls
+# Now, just to make sure it will work, lets fix the
+# permissions.
+# If you deleted the `projects` folder
+mkdir -p projects
+# If the current user is `root`, you will need sudo here
+sudo chown -R $USER:$USER projects
+sudo chmod -R 755 projects
+# Now re-build
+just upbuildexec
+
+# Since we did not delete the image, it may be way faster
+# Now, test it:
+touch ~/projects/deleteme
+echo 123 > ~/projects/deleteme
+cat ~/projects/deleteme
+123 # <- result
+rm ~/projects/deleteme
+
+# That worked here 🫶
+```
+
+Hope this helps!
+
+---

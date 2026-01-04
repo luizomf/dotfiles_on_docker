@@ -1,0 +1,43 @@
+#!/usr/env/bin bash
+# vim: set filetype=sh :
+
+# Misc
+alias gitlog='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
+alias pipupgrade="pip freeze | sed -e 's/==.*//' | xargs pip install --upgrade"
+alias pipdeleteall='pip freeze | xargs pip uninstall -y'
+
+# Git
+alias gitreset='git add . && git reset --hard'
+
+# Kill
+alias killcode='pkill -9 -f "Visual Studio Code"'
+alias killchrome='pkill -9 -f "Google Chrome"'
+alias killnode='pkill -9 -f node'
+alias killpython='pkill -9 -f python'
+alias killffmpeg='pkill -9 -f ffmpeg'
+alias killchromecode='killcode ; killchrome'
+
+# Linux
+alias sudo='sudo ' # this is needed to use your aliases with sudo
+alias s='sudo'     # this is needed to use your aliases with sudo
+
+# Softwares
+alias nano='nvim' # se vira
+
+alias brewupdate='brew update ; brew upgrade ; omz update ; brew cleanup ; brew bundle dump --file=~/dotfiles/homebrew/Brewfile --describe --force'
+alias killadobe='sudo pkill -9 -f "Adobe" ; sudo pkill -9 -f "ACCFinderSync" ; sudo pkill -9 -f "CCXProcess.app" ; sudo pkill -9 -f "Core Sync.app" ; sudo pkill -9 -f "CCLibrary.app"'
+
+# Mac OS
+alias cleanmacos='sudo purge; sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; sudo rm -rf ~/Library/Logs/*; osascript -e "tell app \"Finder\" to empty Trash" &> /dev/null'
+
+alias zs='source ~/.zshrc'  # recarregar config rápido
+alias brewcheck='brew leaves | sort'
+
+# Tree ignorando .git, __pycache__, node_modules, .venv, dist, .DS_Store
+alias tre="tree --prune -a -C -I '__pycache__|node_modules|.git|.venv|dist|.DS_Store|*.egg*'"
+alias j="just"
+
+if [[ "$(uname -s)" = "Linux" ]]; then
+  alias pbcopy='xclip -selection clipboard'
+  alias pbpaste='xclip -selection clipboard -o'
+fi

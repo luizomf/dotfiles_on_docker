@@ -1,0 +1,28 @@
+services:
+  ubuntu_local:
+    container_name: ubuntu_local
+    hostname: dubuntu
+    image: ubuntu_local
+    pull_policy: never
+    restart: 'no'
+    tty: true
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # If you want to change something, use the .env file
+        DEV_USER: ${DEV_USER}
+        DEV_UID: ${DEV_UID}
+        DEV_GID: ${DEV_GID}
+
+    command: /bin/zsh
+
+    volumes:
+      - user_home:/home/${DEV_USER}
+      - ./dotfiles:/home/${DEV_USER}/dotfiles
+      - ./projects:/home/${DEV_USER}/projects
+
+volumes:
+  user_home:
+    name: user_home_${DEV_USER}

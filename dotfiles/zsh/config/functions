@@ -1,0 +1,356 @@
+#!/usr/bin/env bash
+# vim: set filetype=sh :
+
+# Reset
+RESET='\033[0m'
+
+# Cores normais
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+
+# Funções para printar mensagens coloridas de forma legível
+log() {
+  printf "${CYAN}%s${RESET}\n" "$1"
+}
+
+loginfo() {
+  log "🔵 $1"
+}
+
+logsuccess() {
+  printf "🟢 ${GREEN}%s${RESET}\n" "$1"
+}
+
+logwarning() {
+  printf "🟡 ${YELLOW}%s${RESET}\n" "$1"
+}
+
+logerror() {
+  printf "🔴 ${RED}%s${RESET}\n" "$1"
+}
+
+
+dtouch() {
+  mkdir -p "$(dirname "$1")"
+  touch "$1"
+}
+
+componentTs() {
+  # code -r src/components/"$1"/index.tsx src/components/"$1"/"$1".tsx src/components/"$1"/"$1".module.css
+  mkdir -p src/components/"$1"
+  zed -a src/components/"$1"/index.tsx
+  zed -a src/components/"$1"/"$1".spec.tsx
+  zed -a src/components/"$1"/"$1".test.tsx
+  zed -a src/components/"$1"/"$1".stories.tsx
+  zed -a src/components/"$1"/"$1".module.css
+}
+
+componentJs() {
+  code -r src/components/"$1"/styles.js src/components/"$1"/index.jsx src/components/"$1"/stories.jsx src/components/"$1"/"$1".spec.jsx
+}
+
+aula_c() {
+  [ -z "$1" ] && echo "Empty Param, send a class name" && return
+  ffmpeg -i \
+    "${HOME}/Desktop/$1.mp4" -vf "scale=1920:1080" -sws_flags lanczos \
+    -c:v libx264 -crf 23 -preset slow -c:a aac -b:a 160k \
+    "${HOME}/Desktop/$1-c.mp4"
+}
+
+memoryUsage() {
+  # shellcheck disable=SC2009
+  ps -A -o rss,comm | grep -E "$1" | grep -v grep | awk '{ sum += $1 } END { printf "%.2f MB\n", sum / 1024 }'
+}
+
+deletePythonCache() {
+    echo "Limpando diretórios de cache e build..."
+
+    deactivate
+
+    find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".tox" -o -name "*.egg-info" -o -name "build" -o -name "dist" \) -exec rm -r {} \;
+    find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+
+    echo "Limpeza concluída com sucesso!"
+}
+
+
+
+iterm() {
+    cwd=$(pwd)
+    open -a iterm "$cwd"
+}
+
+restart_terminal() {
+  fc -W
+  # shellcheck source=../.zshrc
+  . "${HOME}/.zshrc"
+  tmux respawn-window -k
+}
+
+show_colors() {
+  for i in {0..255}; do
+    print -P ">>>  $(printf '%03d' "$i")  %F{$i}Dummy text%f  %F{232}%K{$i} dummy text %k%f  <<<"
+  done
+}
+
+gitconfig() {
+  set -e
+
+  log "Your name:"
+  read -r NAME
+
+  log "Your e-mail:"
+  read -r EMAIL
+
+  log
+
+  # Initialize git
+  log "Command: git init"
+  git init
+
+  # Configurar o nome do usuário"
+  log "Command: git config user.name \"${NAME}\""
+  git config user.name "${NAME}"
+
+  # Configurar o e-mail do usuário"
+  log "Command: git config user.email \"${EMAIL}\""
+  git config user.email "${EMAIL}"
+
+  # Muda o nome do branch para main"
+  log "Command: git branch -m main"
+  git branch -m main
+
+  # Garantir que o Git converta CRLF para LF apenas ao commitar (ótimo para projetos multiplataforma)"
+  log "Command: git config core.autocrlf input"
+  git config core.autocrlf input
+
+  # Forçar o Git a usar LF como fim de linha sempre"
+  log "Command: git config core.eol lf"
+  git config core.eol lf
+
+  # Verificar as configurações aplicadas"
+  log "Command: git config --list --local"
+  # git config --list --local
+  #
+  # Adicionando o repositório"
+  # log "git add ."
+  # log "git commit -m \"initial\""
+  # log "git remote add origin LINK-REPO"
+  # log "git push origin main -u  "
+}
+
+tmux_respawn_all() {
+  echo "Iniciando a limpeza do Tmux Resurrect"
+  fc -W
+  . "${HOME}/.zshrc"
+  cleanNeovimLogs
+
+  "${HOME}/dotfiles/scripts/zsh_history_sync.py"
+
+
+  rm -Rf "${HOME}/.local/share/tmux/resurrect/*.*"
+  rm -Rf "${HOME}/.local/share/tmux/resurrect/last"
+
+  echo "Salvando as sessões..."
+  "${HOME}/.tmux/plugins/tmux-resurrect/scripts/save.sh"
+
+  echo "Tmux resurrect limpo com sucesso!"
+  sleep 2
+
+  for pane in $(tmux list-panes -a -F '#D'); do
+    tmux respawn-pane -k -t "$pane";
+  done
+
+  sleep 2
+
+  echo "Salvando as sessões novamente..."
+  "${HOME}/.tmux/plugins/tmux-resurrect/scripts/save.sh"
+}
+
+cleanNeovimLogs() {
+  echo "🧼 Iniciando limpeza de logs e cache do Neovim..."
+
+  [[ -d ${HOME}/.local/state/nvim ]] && rm ~/.local/state/nvim/*.log
+  [[ -d ${HOME}/.cache/nvim ]] && {
+      rm ~/.cache/nvim/*.log
+      "rm -r ${HOME}/.cache/nvim/shada"
+      "rm -r ${HOME}/.cache/nvim/sessions"
+  }
+  echo "✅ Neovim limpo com sucesso!"
+}
+
+# Wrapper para resolver um problema chato de SSH:
+# Minha confusão se estou local ou no server
+sshc() {
+  if [ -z "$TMUX" ]; then
+    # Não estamos no tmux
+    original_term=$TERM
+    TERM=$SSH_TERM
+    command ssh "$@"
+    TERM=$original_term
+    return
+  fi
+
+  tmux setenv -g SSH_ACTIVE 1
+
+  # Pega o estilo atual do tmux
+  original_sl=$(tmux show-options -gqv status-left)
+  original_term=$TERM
+
+  # Lógica de limpeza
+  # shellcheck disable=SC2329
+  _cleanup() {
+    tmux setenv -g SSH_ACTIVE 0
+    tmux set -g status-left "$original_sl"
+    TERM="$original_term"
+  }
+
+  trap _cleanup EXIT
+
+  TERM=$SSH_TERM
+  command ssh -q "$@"
+}
+
+tmuxns() {
+  session_name="$1"
+  shift
+
+  tmux new-session -d -s "$session_name" -c "$(pwd)"
+
+  for arg in "$@"; do
+    tmux new-window -t "$session_name" -n $arg -c "$(pwd)"
+  done
+}
+
+tmux_run_all_panes() {
+  for window in $(tmux list-panes -a -F "#D"); do
+    tmux send-keys -t "$window" "$@" C-m
+  done
+}
+
+ollama_stop_all() {
+  ollama ps | awk 'NR>1 {print $1}' | xargs -L 1 ollama stop
+}
+
+updateall() {
+  log "Sleeping for 1 sec..."
+  sleep 1
+
+  log "Writing history to file"
+  fc -W
+  log "Sourcing .zshrc"
+  # shellcheck source=../.zshrc
+  source "${HOME}/.zshrc"
+
+  log "Sourcing .tmux.conf"
+  # shellcheck source=../tmux/.tmux.conf
+  tmux source "${HOME}/.tmux.conf"
+
+  log "Cleaning nvim logs..."
+  cleanNeovimLogs
+
+  log "Synchronizing ZSH history to local computers..."
+  pyenv exec "${HOME}/dotfiles/scripts/zsh_history_sync.py"
+  sleep 5
+
+  log "Running brew update"
+  brew update
+  log "Running brew upgrade"
+  brew upgrade
+  log "Running omz update"
+  omz update
+  log "Running brew cleanup"
+  brew cleanup
+
+  log "Regenerating brew bundle file"
+  brew bundle dump --file="${HOME}/dotfiles/homebrew/Brewfile" --force --no-restart
+
+  log "Running uv self update"
+  uv self update
+  log "Running uv upgrade tools: pyright mupy ruff"
+  uv tool upgrade pyright mypy ruff
+  log "Running uv python upgrade"
+  uv python upgrade
+
+  log "Running npm upgrade for global packages: gemini npm prettier pyright"
+  npm -g upgrade @google/gemini-cli npm prettier pyright
+
+  log "Sleeping for 1 sec..."
+  sleep 1
+}
+
+clear () {
+  tmux clear-history
+  printf '\e[H\e[2J\e[3J'
+}
+
+convert_for_youtube() {
+  local INPUT=""
+  local OUTPUT=""
+  local RED="\e[38;5;1m"
+  local RESET="\e[0m"
+
+  help_msg() {
+    printf "Usage: %b <options>\n\n" "${0##*/}"
+    printf "Options:\n"
+    printf "  -i, --input   FILEPATH  Source video you wish to use.\n"
+    printf "  -o, --output  FILEPATH  Output video after conversion.\n"
+    printf "  -h, --help              Display this help information.\n"
+  }
+
+  errormsg_then_help() {
+    help_msg
+    printf "\n%bError message:%b \n%b\n\n" "${RED-}" "${RESET-}" "${1:-Unknown error}"
+    printf "Please, use --help or -h for usage information.\n"
+  }
+
+  require_value() {
+    local opt="$1" val="$2"
+    if [[ -z "$val" || "$val" == -* ]]; then
+      errormsg_then_help "$opt must have a <value>. Use $opt <value>."
+      return 1
+    fi
+  }
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --input|-i)
+        require_value "$1" "${2-}"
+        INPUT="$2"
+        shift 2
+        ;;
+      --output|-o)
+        require_value "$1" "${2-}"
+        OUTPUT="$2"
+        shift 2
+        ;;
+      --help|-h)
+        help_msg
+        return 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      *)
+        errormsg_then_help "Unknown argument: $1"
+        return 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$INPUT" || -z "$OUTPUT" ]]; then
+    errormsg_then_help "Input or output file paths missing"
+    return 1
+  fi
+
+  ffmpeg -fflags +genpts -fflags +igndts \
+    -i "$INPUT" \
+    -c:v libx264 -profile:v high -crf 13 -bf 2 -g 15 -coder 1 -pix_fmt yuv420p \
+    -preset slow \
+    -c:a aac -ar 48000 -b:a 384k -ac 2 \
+    -movflags +faststart \
+    "$OUTPUT"
+}

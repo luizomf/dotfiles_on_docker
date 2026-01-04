@@ -1,0 +1,65 @@
+#!/usr/env/bin bash
+# vim: set filetype=sh :
+# shellcheck disable=SC1091,SC2154
+
+export KEYTIMEOUT=30
+export EDITOR="nvim"
+export VISUAL="nvim"
+export TABSIZE=2
+export SSH_TERM="xterm-256color"
+
+ZSH_HIGHLIGHT_STYLES[comment]='fg=240'
+ZSH_HIGHLIGHT_STYLES[default]='fg=251'
+ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=red,bold'
+
+export OLLAMA_HOST="0.0.0.0:11434"
+
+export FZF_DEFAULT_OPTS='
+  --color=fg:#dadada,fg+:#ffffff,bg:#000000,bg+:#3a3a3a
+  --color=hl:#afffaf,hl+:#00ff5f,info:#00ff87,marker:#00ff5f
+  --color=prompt:#dadada,spinner:#00ff87,pointer:#00ff87,header:#00ff87
+  --color=gutter:#121212,border:#121212,separator:#808080,scrollbar:#808080
+  --color=label:#dadada,query:#dadada
+  --preview-window="border-rounded" --prompt="> " --marker=">" --pointer="◆"
+  --separator="─" --scrollbar="│" --layout="reverse"'
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+
+# BE SURE TO FIX THE ENV VARIABLES
+# brew install libpq --build-from-source
+# brew install mysql-client
+# brew install openssl
+# brew install curl
+
+# PKG_CONFIG_PATH acumulado corretamente
+export PKG_CONFIG_PATH="/opt/homebrew/opt/curl/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/sqlite/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+# LDFLAGS (links de bibliotecas nativas)
+export LDFLAGS="-L/opt/homebrew/lib -L/opt/homebrew/opt/openssl/lib -L/opt/homebrew/opt/openssl@3/lib -L/opt/homebrew/opt/curl/lib -L/opt/homebrew/opt/mysql-client/lib -L/opt/homebrew/opt/libpq/lib -L/opt/homebrew/opt/sqlite/lib"
+
+# CPPFLAGS (cabeçalhos de compilação)
+export CPPFLAGS="-I/opt/homebrew/include -I/opt/homebrew/opt/openssl/include -I/opt/homebrew/opt/openssl@3/include -I/opt/homebrew/opt/curl/include -I/opt/homebrew/opt/mysql-client/include -I/opt/homebrew/opt/libpq/include -I/opt/homebrew/opt/sqlite/include"
+export BAT_STYLE="header"
+
+PATH="/opt/homebrew/opt/curl/bin:/opt/homebrew/opt/mysql-client/bin:/opt/homebrew/opt/libpq/bin:${PATH}"
+
+if [ "$(uname -s)" = "Linux" ]; then
+  PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [ "$(uname -s)" = "Darwin" ]; then
+  PATH="/opt/homebrew/opt/sqlite/bin:${PATH}"
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+PATH="${HOME}/.pyenv/bin:${PATH}"
+PATH="$(pyenv root)/shims:${PATH}"
+# eval "$(pyenv init -)"
+
+. "$HOME/.local/bin/env"
+[ -f ~/.fzf.zsh ] && . "${HOME}/.fzf.zsh"
+
+export PATH

@@ -40,7 +40,7 @@ It is very simple. Just clone this repo and build the imagem. If you wish to see
 all the `just` recipes, just run `just`.
 
 ```sh
-git clone git@github.com:luizomf/dotfiles_on_docker.git dotfiles_on_docker
+git clone https://github.com/luizomf/dotfiles_on_docker.git dotfiles_on_docker
 cd dotfiles_on_docker
 # Copy the .env.example to the real .env
 cp .env.example .env

@@ -37,7 +37,3 @@ alias brewcheck='brew leaves | sort'
 alias tre="tree --prune -a -C -I '__pycache__|node_modules|.git|.venv|dist|.DS_Store|*.egg*'"
 alias j="just"
 
-if [[ "$(uname -s)" = "Linux" ]]; then
-  alias pbcopy='xclip -selection clipboard'
-  alias pbpaste='xclip -selection clipboard -o'
-fi

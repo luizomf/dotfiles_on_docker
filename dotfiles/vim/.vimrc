@@ -9,7 +9,7 @@ Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 call plug#end()
 
-" packadd! hlyank
+packadd! hlyank
 syntax on
 
 set nocompatible
@@ -25,6 +25,7 @@ set expandtab
 set autoindent
 set smartindent
 set mouse=a
+" set clipboard=unnamedplus
 set clipboard=unnamed
 set nowrap
 set backspace=indent,eol,start

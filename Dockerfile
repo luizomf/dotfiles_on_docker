@@ -11,7 +11,7 @@ RUN apt-get update \
     automake liblzma-dev tzdata tcl tk-dev libgdbm-dev python3-dev \
     lua5.4 unzip tree htop liblua5.4-dev gettext python3 \
     libssl-dev ca-certificates aria2 openssh-client make openssh-server \
-    libffi-dev xclip \
+    libffi-dev xclip inotify-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* ;
 
@@ -86,6 +86,7 @@ RUN mkdir -p "${HOME_PATH}/.config" \
 RUN . ${HOME_PATH}/.zshrc \
   && nvm install --lts \
   && nvm install-latest-npm \
+  && npm i -g prettier \
   && uv tool install ruff \
   && uv tool install pyright \
   && .pyenv/bin/pyenv install 3 \
@@ -101,6 +102,12 @@ RUN vim +PlugInstall +qall >/dev/null 2>&1 \
   && tmux new-session -d \
   && "${HOME_PATH}/.tmux/plugins/tpm/bin/install_plugins" \
   && tmux kill-server \
+  ;
+
+RUN . ${HOME_PATH}/.zshrc \
+  && npm i -g prettier \
+  && npm i -g neovim \
+  && .pyenv/bin/pyenv exec pip install neovim \
   ;
 
 ENTRYPOINT []

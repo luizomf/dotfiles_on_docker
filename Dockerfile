@@ -11,7 +11,8 @@ RUN apt-get update \
     automake liblzma-dev tzdata tcl tk-dev libgdbm-dev python3-dev \
     lua5.4 unzip tree htop liblua5.4-dev gettext python3 \
     libssl-dev ca-certificates aria2 openssh-client make openssh-server \
-    libffi-dev ncurses-term inotify-tools \
+    libffi-dev ncurses-term inotify-tools iputils-ping dnsutils traceroute \
+    iproute2 net-tools  \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* ;
 

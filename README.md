@@ -114,6 +114,15 @@ rm ~/projects/deleteme
 # That worked here 🫶
 ```
 
+---
+
+## The font
+
+If you have problems with the `tmux` theme, just use one of the those fonts:
+
+- [powerline/fonts](https://github.com/powerline/fonts)
+- I use [JetBrains Mono](https://www.jetbrains.com/lp/mono/)
+
 Hope this helps!
 
 ---

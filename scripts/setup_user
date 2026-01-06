@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+: "${DEV_UID:?}"
+: "${DEV_GID:?}"
+: "${DEV_USER:?}"
+: "${HOME_PATH:?}"
+
+# Create group only if GID does not exist
+if ! getent group "${DEV_GID}" >/dev/null; then
+  groupadd --gid "${DEV_GID}" "${DEV_USER}"
+fi
+
+# Create user only if UID does not exist
+if ! id -u "${DEV_UID}" >/dev/null 2>&1; then
+  useradd \
+    --uid "${DEV_UID}" \
+    --gid "${DEV_GID}" \
+    --home-dir "${HOME_PATH}" \
+    --no-create-home \
+    --shell /bin/zsh \
+    "${DEV_USER}"
+fi
+
+mkdir -p "${HOME_PATH}"
+chown -R "${DEV_UID}:${DEV_GID}" "${HOME_PATH}"
+
+mkdir -p /home/linuxbrew/.linuxbrew
+chown -R "${DEV_UID}:${DEV_GID}" /home/linuxbrew
+
+echo "${DEV_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev-user
+chmod 0440 /etc/sudoers.d/dev-user
+

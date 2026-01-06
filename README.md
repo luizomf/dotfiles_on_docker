@@ -1,127 +1,177 @@
-# My Development Environment for Docker
+# My Docker-Based Development Environment
 
-I tried to replicate this development environment precisely how I use it in
-macOS.
+> 🚨 **WARNING** This image is **not intended for production use**. It's a
+> **developer environment** and intentionally includes unsafe defaults for
+> convenience (sudo, sudoers, etc).
 
-I've been testing it for a few days and it's been working fine.
+This repository contains my personal development environment, running on Ubuntu
+inside Docker. The goal is to replicate how I actually work on macOS, but in a
+clean, reproducible Linux setup.
+
+I’ve been using this setup daily for a few days now, and it's been working well.
 
 ---
 
 ## How does it work?
 
-I'm using Ubuntu 24.04 to run: `zsh`, `oh-my-zsh`, `tmux`, `nvim`, `vim`, and
-lots of other applications. We are using a combination of: `Dockerfile`,
-`compose.yaml` and `just` to make it easier to `build`, `start` and `stop`
-containers.
+The environment is based on **Ubuntu 24.04** and includes tools I use every day,
+such as:
 
-So, if you want test it, make sure you have `Docker` and `just` installed.
+- `zsh` + `oh-my-zsh`
+- `tmux`
+- `neovim` and `vim`
+- and many other CLI tools
 
-In the docker compose file, I'm mapping 3 volumes to ensure my initial
-configuration (my `dotfiles`) and data persistence after the build. I'm also
-adding a `projects` folder, so you can work on your projects inside it.
+The setup uses a combination of:
 
-- `./dotfiles` - Those are my real `dotfiles` with all things configured
-- `./projects` - This is a directory you can use for your projects
-- `user_home` - This directory is managed by docker. It is were your `$HOME`
-  data will be persisted.
+- `Dockerfile`
+- `compose.yaml`
+- `just`
 
----
+To make it easy to **build**, **start**, **stop**, and **enter** the container.
 
-## How to build the image?
-
-Make sure to have `docker` and `just` installed (and `git`, obviously).
+If you want to try it yourself, make sure you have these installed:
 
 - [Docker](https://www.docker.com/)
 - [just](https://github.com/casey/just)
 
-### Building and running
+---
 
-It is very simple. Just clone this repo and build the imagem. If you wish to see
-all the `just` recipes, just run `just`.
+## Volumes and persistence
+
+The Docker Compose file maps three volumes/directories to keep configuration and
+data persistent across rebuilds:
+
+- `./dotfiles` My real dotfiles, exactly as I use them.
+- `./projects` A directory for your own projects. This is where you should work.
+- `user_home` (Docker volume) Managed by Docker. This is where your `$HOME` data
+  is persisted.
+
+---
+
+## Building and running the environment
+
+Clone the repository and build the image. If you want to see all available
+`just` recipes, just run `just`.
 
 ```sh
 git clone https://github.com/luizomf/dotfiles_on_docker.git dotfiles_on_docker
 cd dotfiles_on_docker
-# Copy the .env.example to the real .env
+
+# Copy the example environment file
 cp .env.example .env
-# This just recipe will execute those commands:
+
+# This recipe runs the following commands internally:
 # docker compose --env-file .env -f compose.yaml down
 # docker compose --env-file .env -f compose.yaml up -d --build --force-recreate --remove-orphans
 # docker compose --env-file .env -f compose.yaml up -d
 # docker compose --env-file .env -f compose.yaml exec -it ubuntu_local /bin/zsh
-just upbuildexec # It takes about 5 minutes to build
-
-# If everything is OK, you'll end-up in the container.
-# Just `exit` to leave
+just upbuildexec  # First build takes ~5 minutes
 ```
 
-After this initial build, you can just run `just exec` to enter whenever you
-want.
+If everything goes well, you'll end up inside the container. Type `exit` to
+leave.
+
+After the first build, you can simply run:
+
+```sh
+just exec
+```
+
+To enter the environment whenever you want.
 
 ---
 
-## Permissions
+## Permissions (important)
 
-When the directory `project` is created by Docker, you may end up with your host
-user or `root` owning it. That means you won't be able to do anything with that
-directory.
+When the `projects` directory is created by Docker, it may end up owned by
+`root` or by a different user than your host user. When that happens, you won’t
+be able to write to it normally.
 
-To fix that, you can match you `$USER` id with the user inside docker. You can
-even match the username if you wish. You just have to change the `.env` file,
-delete volume and rebuild.
+To fix this, you can **match your host UID/GID with the user inside the
+container**. You can even match the username if you want.
 
-Let me show you how you can do it:
+This requires:
+
+- editing the `.env` file
+- deleting the Docker volume
+- rebuilding the container
+
+### Example
 
 ```sh
-# Find your user ID
+# Check your host user IDs
 id
-# In the VM I'm testing, the username is `luizotavio`, the group is `luizotavio`,
-# and both UID and GID are 1001.
-# uid=1001(luizotavio) gid=1001(luizotavio)...
-# Right, go to `.env` and change the values:
-# The current values are:
+```
+
+Example output (from a VM I tested):
+
+```text
+uid=1001(luizotavio) gid=1001(luizotavio)
+```
+
+Edit `.env`.
+
+Current values:
+
+```env
 DEV_USER=dubuntu
 DEV_UID=1010
 DEV_GID=1010
-# The new values are:
+```
+
+Updated values:
+
+```env
 DEV_USER=luizotavio
 DEV_UID=1001
 DEV_GID=1001
+```
 
-# Now lets stop the container (if it is running)
+Now stop the container and remove the volume:
+
+```sh
 docker compose down
-# And delete the volume
 docker volume rm user_home_dubuntu
-# If you wish to check first: docker volume ls
-# Now, just to make sure it will work, lets fix the
-# permissions.
-# If you deleted the `projects` folder
+# (check volumes with: docker volume ls)
+```
+
+Fix permissions on the `projects` directory if needed:
+
+```sh
 mkdir -p projects
-# If the current user is `root`, you will need sudo here
 sudo chown -R $USER:$USER projects
 sudo chmod -R 755 projects
-# Now re-build
-just upbuildexec
+```
 
-# Since we did not delete the image, it may be way faster
-# Now, test it:
+Rebuild:
+
+```sh
+just upbuildexec
+```
+
+Test it:
+
+```sh
 touch ~/projects/deleteme
 echo 123 > ~/projects/deleteme
 cat ~/projects/deleteme
-123 # <- result
 rm ~/projects/deleteme
-
-# That worked here 🫶
 ```
+
+If you see `123`, everything is working.
 
 ---
 
-## The font
+## Fonts
 
-If you have problems with the `tmux` theme, just use one of the those fonts:
+If you have issues with the `tmux` theme or icons, make sure you’re using a
+compatible font:
 
 - [powerline/fonts](https://github.com/powerline/fonts)
-- I use [JetBrains Mono](https://www.jetbrains.com/lp/mono/)
+- I personally use [JetBrains Mono](https://www.jetbrains.com/lp/mono/)
+
+---
 
 Hope this helps!
 

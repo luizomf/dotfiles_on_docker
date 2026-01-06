@@ -1,42 +1,173 @@
 FROM ubuntu:24.04
 
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Base OS essentials (stable)
+# 🚨 Never use this image in production.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    bash zsh openssl tk tmux ninja-build ffmpeg libsqlite3-dev \
-    python3-venv libtool-bin bat build-essential watch fd-find \
-    pkg-config locales curl fonts-firacode file p7zip ripgrep \
-    tcl-dev libtool llvm libreadline-dev lzma cmake pipx \
-    luarocks tree-sitter-cli sqlite3 nano wget autoconf pkgconf \
-    fonts-jetbrains-mono zlib1g-dev less blt-dev git libbz2-dev \
-    automake liblzma-dev tzdata tcl tk-dev libgdbm-dev python3-dev \
-    lua5.4 unzip tree htop liblua5.4-dev gettext python3 \
-    libssl-dev ca-certificates aria2 openssh-client make openssh-server \
-    libffi-dev ncurses-term inotify-tools iputils-ping dnsutils traceroute \
-    iproute2 net-tools  \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* ;
-
-ARG DEBIAN_FRONTEND=noninteractive
-ARG DEV_UID
-ARG DEV_GID
-ARG DEV_USER
-
-ARG HOME_PATH=/home/${DEV_USER}
-ENV HOME=${HOME_PATH}
+    sudo \
+    ca-certificates \
+    locales \
+    tzdata \
+    bash \
+    zsh \
+    openssl \
+    curl \
+    wget \
+    git \
+    openssh-client \
+    openssh-server \
+    file \
+    less \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
 
 RUN locale-gen en_US.UTF-8 ;
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TERM=xterm-256color
 
-RUN \
-  mkdir -p ${HOME_PATH} \
-  && chown -R ${DEV_UID}:${DEV_GID} ${HOME_PATH} \
-  && groupadd --gid ${DEV_GID} ${DEV_USER} \
-  && useradd -d ${HOME_PATH} --uid ${DEV_UID} --gid ${DEV_GID} --no-create-home --shell /bin/zsh ${DEV_USER} \
-  && mkdir -p /home/linuxbrew/.linuxbrew \
-  && chown -R ${DEV_UID}:${DEV_GID} /home/linuxbrew \
+# Core build toolchain (stable, heavy)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    make \
+    pkg-config \
+    pkgconf \
+    llvm \
+    cmake \
+    ninja-build \
+    autoconf \
+    automake \
+    libtool \
+    libtool-bin \
+    gettext \
+    zlib1g-dev \
+    libbz2-dev \
+    liblzma-dev \
+    lzma \
+    libreadline-dev \
+    libssl-dev \
+    libffi-dev \
+    libgdbm-dev \
+    ncurses-term \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
   ;
+
+# Python runtime + dev headers + venv tooling (stable-ish)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-dev \
+    python3-venv \
+    pipx \
+    libsqlite3-dev \
+    sqlite3 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Shell/editor/terminal dev tools (stable-ish)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    tmux \
+    nano \
+    bat \
+    ripgrep \
+    fd-find \
+    watch \
+    htop \
+    tree \
+    tree-sitter-cli \
+    inotify-tools \
+    p7zip \
+    unzip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Lua/Tcl/Tk ecosystem (plugins often depend on these)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    lua5.4 \
+    liblua5.4-dev \
+    luarocks \
+    tcl \
+    tk \
+    tk-dev \
+    tcl-dev \
+    blt-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Media + fonts (stable)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    fonts-firacode \
+    fonts-jetbrains-mono \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Networking / debugging tools (stable)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    iputils-ping \
+    dnsutils \
+    traceroute \
+    iproute2 \
+    net-tools \
+    aria2 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Docker inside docker? Let's test that out
+# You have to mount:
+# - /var/run/docker.sock:/var/run/docker.sock
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl gnupg \
+  && install -m 0755 -d /etc/apt/keyrings \
+  && curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+     | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+  && chmod a+r /etc/apt/keyrings/docker.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+     https://download.docker.com/linux/ubuntu \
+     $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+     > /etc/apt/sources.list.d/docker.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+     docker-ce-cli docker-compose-plugin docker-buildx-plugin \
+  && rm -rf /var/lib/apt/lists/* \
+  ;
+
+# Discovery layer (changes often)
+# Good for new packages.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  # Add new packages here first. Once you're happy with it, move
+  # it to the above lines. This keeps the above packages in cache and
+  # makes builds faster.
+  shellcheck \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* ;
+
+# User creation (unchanged logic, but order improved)
+ARG DEV_UID
+ARG DEV_GID
+ARG DEV_USER
+ARG HOME_PATH=/home/${DEV_USER}
+ENV HOME=${HOME_PATH}
+
+# Setup scripts (user, groups, etc)
+# NEVER, EVER, EVER USE THIS IMAGE IN PROD.
+COPY --chmod=o+x ./scripts /usr/local/bin
+RUN setup_user ;
 
 USER ${DEV_USER}
 WORKDIR ${HOME_PATH}
@@ -48,7 +179,6 @@ ENV NONINTERACTIVE=1 \
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
   && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" ;
 
-# Install new things here to avoid downloading all things above
 RUN brew install neovim vim fzf bat \
   && brew cleanup --prune=all ;
 
@@ -84,14 +214,23 @@ RUN mkdir -p "${HOME_PATH}/.config" \
   && ln -sfn "${HOME_PATH}/dotfiles/zsh/config/omtheme.zsh-theme" "${ZSH_CUSTOM}/themes/omtheme.zsh-theme" \
   ;
 
+ENV PYENV_ROOT="$HOME/.pyenv" \
+  PATH="$PYENV_ROOT/bin:${PYENV_ROOT}/shims:$PATH"
+
 RUN . ${HOME_PATH}/.zshrc \
-  && nvm install --lts \
-  && nvm install-latest-npm \
-  && npm i -g prettier \
+  eval "$(pyenv init --path)" \
   && uv tool install ruff \
   && uv tool install pyright \
   && .pyenv/bin/pyenv install 3 \
   && .pyenv/bin/pyenv global 3 \
+  && .pyenv/bin/pyenv exec pip install neovim \
+  ;
+
+RUN . ${HOME_PATH}/.zshrc \
+  && nvm install --lts \
+  && nvm install-latest-npm \
+  && npm i -g prettier \
+  && npm i -g neovim \
   ;
 
 RUN vim +PlugInstall +qall >/dev/null 2>&1 \
@@ -105,12 +244,6 @@ RUN vim +PlugInstall +qall >/dev/null 2>&1 \
   && tmux kill-server \
   ;
 
-RUN . ${HOME_PATH}/.zshrc \
-  && npm i -g prettier \
-  && npm i -g neovim \
-  && .pyenv/bin/pyenv exec pip install neovim \
-  ;
-
-ENTRYPOINT []
+ENTRYPOINT ["docker_entrypoint"]
 CMD ["/bin/zsh"]
 

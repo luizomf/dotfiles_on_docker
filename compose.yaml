@@ -1,3 +1,5 @@
+# NEVER, EVER, EVER USE THIS IMAGE IN PROD.
+
 services:
   ubuntu_local:
     container_name: ubuntu_local
@@ -19,6 +21,7 @@ services:
     command: /bin/zsh
 
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - user_home:/home/${DEV_USER}
       - ./dotfiles:/home/${DEV_USER}/dotfiles
       - ./projects:/home/${DEV_USER}/projects

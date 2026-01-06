@@ -1,0 +1,5 @@
+#!/usr/bin/env zsh
+
+# If you need any startup script add it here.
+
+exec "${@}"

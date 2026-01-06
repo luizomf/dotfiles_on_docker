@@ -161,8 +161,10 @@ RUN apt-get update \
 ARG DEV_UID
 ARG DEV_GID
 ARG DEV_USER
+ARG HOST_CURR_DIR
 ARG HOME_PATH=/home/${DEV_USER}
-ENV HOME=${HOME_PATH}
+
+ENV HOST_CURR_DIR=${HOST_CURR_DIR}
 
 # Setup scripts (user, groups, etc)
 # NEVER, EVER, EVER USE THIS IMAGE IN PROD.
@@ -199,9 +201,10 @@ RUN curl -fsSL https://pyenv.run | bash ;
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh ;
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash ;
 RUN curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
-   https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim ;
+   https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim \
+   ;
 
-COPY dotfiles dotfiles
+COPY --chown="${DEV_UID}":"${DEV_GID}" ./dotfiles dotfiles
 
 RUN mkdir -p "${HOME_PATH}/.config" \
   && ln -sfn "${HOME_PATH}/dotfiles/zsh/.zshrc" "${HOME_PATH}/.zshrc" \
@@ -214,19 +217,19 @@ RUN mkdir -p "${HOME_PATH}/.config" \
   && ln -sfn "${HOME_PATH}/dotfiles/zsh/config/omtheme.zsh-theme" "${ZSH_CUSTOM}/themes/omtheme.zsh-theme" \
   ;
 
-ENV PYENV_ROOT="$HOME/.pyenv" \
-  PATH="$PYENV_ROOT/bin:${PYENV_ROOT}/shims:$PATH"
+ENV PYENV_ROOT="${HOME_PATH}/.pyenv"
+ENV PATH="${HOME_PATH}/.pyenv/bin:${HOME_PATH}/.pyenv/shims:${PATH}"
 
-RUN . ${HOME_PATH}/.zshrc \
-  eval "$(pyenv init --path)" \
+RUN . ${HOME_PATH}/dotfiles/zsh/.zshrc \
+  && eval "$(pyenv init --path)" \
   && uv tool install ruff \
   && uv tool install pyright \
-  && .pyenv/bin/pyenv install 3 \
-  && .pyenv/bin/pyenv global 3 \
-  && .pyenv/bin/pyenv exec pip install neovim \
+  && ${HOME_PATH}/.pyenv/bin/pyenv install 3 \
+  && ${HOME_PATH}/.pyenv/bin/pyenv global 3 \
+  && ${HOME_PATH}/.pyenv/bin/pyenv exec pip install neovim \
   ;
 
-RUN . ${HOME_PATH}/.zshrc \
+RUN . ${HOME_PATH}/dotfiles/zsh/.zshrc \
   && nvm install --lts \
   && nvm install-latest-npm \
   && npm i -g prettier \

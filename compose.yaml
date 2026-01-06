@@ -17,14 +17,15 @@ services:
         DEV_USER: ${DEV_USER}
         DEV_UID: ${DEV_UID}
         DEV_GID: ${DEV_GID}
+        HOST_CURR_DIR: ${HOST_CURR_DIR:-.}
 
     command: /bin/zsh
 
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - user_home:/home/${DEV_USER}
-      - ./dotfiles:/home/${DEV_USER}/dotfiles
+      # - ./dotfiles:/home/${DEV_USER}/dotfiles
       - ./projects:/home/${DEV_USER}/projects
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   user_home:

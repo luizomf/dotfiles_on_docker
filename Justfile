@@ -15,7 +15,10 @@ _d *ARGS:
 
 # docker compose {{ *ARGS }}
 _dc *ARGS:
-  just _d compose --env-file {{ env_filepath }} -f {{ compose_file }} {{ ARGS }}
+  just _d compose \
+    --env-file {{ env_filepath }} \
+    -f {{ compose_file }} \
+    {{ ARGS }}
 
 # docker compose up -d {{ *ARGS }}
 up *ARGS:
@@ -27,11 +30,16 @@ down:
 
 # docker compose run --rm {{ *ARGS }}
 _dcr *ARGS:
-  just _dc run --rm {{ ARGS }}
+  just _dc run  \
+    -e HOST_CURR_DIR="{{ `pwd` }}" \
+    --rm \
+    {{ ARGS }}
 
 # docker compose exec {{ *ARGS }}
 _dce *ARGS:
-  just _dc exec {{ ARGS }}
+  just _dc exec \
+    -e HOST_CURR_DIR="{{ `pwd` }}" \
+    {{ ARGS }}
 
 # docker compose build {{ *ARGS }}
 build *ARGS:
